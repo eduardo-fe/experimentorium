@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Experiment</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 2em;
+    }
+    .screen {
+      display: none;
+    }
+    .visible {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen" class="screen visible">
+    <h2>Welcome to the experiment</h2>
+    <form id="login-form">
+      <label for="participant-id">Enter your ID:</label><br>
+      <input type="text" id="participant-id" name="participant_id" required>
+      <br><br>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+
+  <!-- WAITING SCREEN -->
+  <div id="waiting-screen" class="screen">
+    <h2>Waiting for the experiment to start...</h2>
+    <p id="waiting-message"></p>
+  </div>
+
+  <!-- INSTRUCTIONS SCREEN -->
+  <div id="instructions-screen" class="screen">
+    <h2>Instructions</h2>
+    <p>Here we’ll later display the round instructions.</p>
+  </div>
+
+  <!-- STRATEGY SCREEN -->
+  <div id="strategy-screen" class="screen">
+    <h2>Strategy Method</h2>
+    <p>This content will depend on your role and round.</p>
+  </div>
+
+  <!-- EFFORT TASK -->
+  <div id="effort-task-screen" class="screen">
+    <h2>Effort Task</h2>
+    <p>Here we’ll later add the interactive task.</p>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div id="results-screen" class="screen">
+    <h2>Round Results</h2>
+    <p id="results-content"></p>
+  </div>
+
+  <script src="js/client.js"></script>
+</body>
+</html>
