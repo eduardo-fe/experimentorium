@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Slider Task (Mobile-friendly)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {
+    font-family: sans-serif;
+    margin: 10px;
+    text-align: center;
+  }
+
+  #taskContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .slider-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #f8f8f8;
+    border-radius: 10px;
+    padding: 10px 0;
+    width: 90%;
+    max-width: 350px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .value-label {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .slider {
+    width: 80%;
+    touch-action: none;
+  }
+
+  #timer {
+    font-weight: bold;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Slider Task</h1>
+<p>Move each slider so that it reads <strong>50</strong>. You have <span id="timer">60</span> s.</p>
+
+<div id="taskContainer"></div>
+
+<script>
+const numSliders = 60;          // Fewer sliders for mobile comfort
+const target = 50;
+const tolerance = 2;
+const taskContainer = document.getElementById("taskContainer");
+const sliders = [];
+
+// Create sliders
+for (let i = 0; i < numSliders; i++) {
+  const block = document.createElement("div");
+  block.classList.add("slider-block");
+
+  const label = document.createElement("div");
+  label.classList.add("value-label");
+
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.min = 0;
+  slider.max = 100;
+  slider.value = Math.floor(Math.random() * 100);
+  slider.classList.add("slider");
+
+  label.innerText = slider.value;
+
+  slider.addEventListener("input", () => {
+    label.innerText = slider.value;
+  });
+
+  block.appendChild(label);
+  block.appendChild(slider);
+  taskContainer.appendChild(block);
+
+  sliders.push(slider);
+}
+
+// Countdown timer
+let remaining = 60;
+const timerEl = document.getElementById("timer");
+const interval = setInterval(() => {
+  remaining--;
+  timerEl.textContent = remaining;
+  if (remaining <= 0) clearInterval(interval);
+}, 1000);
+
+// End of task
+setTimeout(() => {
+  const correct = sliders.filter(s => Math.abs(s.value - target) <= tolerance).length;
+  alert(`Time's up! You correctly positioned ${correct} sliders.`);
+  // TODO: send {task:'sliders', correct} to API, then redirect
+}, 60 * 1000);
+</script>
+
+</body>
+</html>

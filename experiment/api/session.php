@@ -168,32 +168,64 @@ switch ($action) {
 
     $round_id = $live_round['round_id'];
 
-    // 1. Delete effort tasks for this round
-    if (!$conn->query("DELETE FROM effort_tasks WHERE round_id = $round_id")) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Error deleting effort tasks: ' . $conn->error
-        ]);
-        break;
-    }
+// 1. Delete player-level decisions for this round
+if (!$conn->query("DELETE FROM decisions WHERE round_id = $round_id")) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error deleting decisions: ' . $conn->error
+    ]);
+    break;
+}
 
-    // 2. Delete stages for this round
-    if (!$conn->query("DELETE FROM stages WHERE round_id = $round_id")) {
+// 2. Delete participant stage decisions (if you have that table)
+if ($conn->query("SHOW TABLES LIKE 'participant_stage_decisions'")->num_rows) {
+    if (!$conn->query("DELETE FROM participant_stage_decisions WHERE round_id = $round_id")) {
         echo json_encode([
             'success' => false,
-            'message' => 'Error deleting stages: ' . $conn->error
+            'message' => 'Error deleting participant stage decisions: ' . $conn->error
         ]);
         break;
     }
+}
 
-    // 3. Delete the round
-    if (!$conn->query("DELETE FROM rounds WHERE round_id = $round_id")) {
+// 3. Delete participant stage status
+if ($conn->query("SHOW TABLES LIKE 'participant_stage_status'")->num_rows) {
+    if (!$conn->query("DELETE FROM participant_stage_status WHERE round_id = $round_id")) {
         echo json_encode([
             'success' => false,
-            'message' => 'Error deleting round: ' . $conn->error
+            'message' => 'Error deleting participant stage status: ' . $conn->error
         ]);
         break;
     }
+}
+
+// 4. Delete effort tasks
+if (!$conn->query("DELETE FROM effort_tasks WHERE round_id = $round_id")) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error deleting effort tasks: ' . $conn->error
+    ]);
+    break;
+}
+
+// 5. Delete stages
+if (!$conn->query("DELETE FROM stages WHERE round_id = $round_id")) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error deleting stages: ' . $conn->error
+    ]);
+    break;
+}
+
+// 6. Finally, delete the round itself
+if (!$conn->query("DELETE FROM rounds WHERE round_id = $round_id")) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error deleting round: ' . $conn->error
+    ]);
+    break;
+}
+
 
     echo json_encode([
         'success' => true,

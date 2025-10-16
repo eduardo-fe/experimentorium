@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adding Numbers Task (Mobile-friendly)</title>
+<style>
+  body {
+    font-family: sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 10px;
+    background: #f5f5f5;
+  }
+  
+  h1 {
+    margin-top: 10px;
+  }
+
+  #taskBox {
+    margin: 20px auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    width: 90%;
+    max-width: 400px;
+  }
+
+  #problem {
+    font-size: 2.4rem;
+    margin-bottom: 20px;
+  }
+
+  #answer {
+    font-size: 2rem;
+    text-align: center;
+    width: 60%;
+    padding: 8px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+
+  #keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 300px;
+    margin: 0 auto 15px;
+  }
+
+  .key {
+    font-size: 1.8rem;
+    padding: 15px 0;
+    background: #e0e0e0;
+    border: none;
+    border-radius: 8px;
+    touch-action: manipulation;
+  }
+
+  .key:active {
+    background: #d0d0d0;
+  }
+
+  #submit {
+    font-size: 1.4rem;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    margin-top: 10px;
+  }
+
+  #timer {
+    margin-top: 10px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<h1>Adding Numbers</h1>
+<p>Solve as many as you can in <span id="timer">60</span> s.</p>
+
+<div id="taskBox">
+  <div id="problem"></div>
+  <input id="answer" type="text" readonly>
+  <div id="keypad"></div>
+  <button id="submit">Submit</button>
+</div>
+
+<script>
+const timerEl = document.getElementById('timer');
+const problemEl = document.getElementById('problem');
+const answerEl = document.getElementById('answer');
+const keypadEl = document.getElementById('keypad');
+const submitBtn = document.getElementById('submit');
+
+let correctCount = 0;
+let currentAnswer = 0;
+let timeLeft = 60;
+
+// Generate random addition problem
+function newProblem() {
+  const a = Math.floor(Math.random() * 9) + 1; // two-digit
+  const b = Math.floor(Math.random() * 90) + 10;
+  currentAnswer = a + b;
+  problemEl.textContent = `${a} + ${b} = ?`;
+  answerEl.value = "";
+}
+newProblem();
+
+// Build keypad
+const keys = ['1','2','3','4','5','6','7','8','9','0','←','C'];
+keys.forEach(k => {
+  const btn = document.createElement('button');
+  btn.textContent = k;
+  btn.className = 'key';
+  btn.onclick = () => handleKey(k);
+  keypadEl.appendChild(btn);
+});
+
+function handleKey(k) {
+  if (k === 'C') answerEl.value = '';
+  else if (k === '←') answerEl.value = answerEl.value.slice(0,-1);
+  else answerEl.value += k;
+}
+
+submitBtn.onclick = () => {
+  if (parseInt(answerEl.value) === currentAnswer) correctCount++;
+  newProblem();
+};
+
+// Countdown
+const interval = setInterval(() => {
+  timeLeft--;
+  timerEl.textContent = timeLeft;
+  if (timeLeft <= 0) {
+    clearInterval(interval);
+    alert(`Time’s up! Correct answers: ${correctCount}`);
+    // TODO: send result to API, then redirect
+  }
+}, 1000);
+</script>
+
+</body>
+</html>

@@ -1,6 +1,9 @@
 <?php
+session_start();
 header('Content-Type: application/json');
 include '../shared/db_connect.php';
+
+$participant_id = $_SESSION['participant_id'] ?? 0;
 
 // --- 1️ Helper functions ---
 
@@ -8,7 +11,6 @@ function getOngoingSession($conn) {
     $result = $conn->query("SELECT * FROM sessions WHERE session_status = 'ongoing' LIMIT 1");
     return ($result && $result->num_rows > 0) ? $result->fetch_assoc() : null;
 }
-
 
 function getLiveRound($conn, $session_id) {
     $query = "SELECT * FROM rounds WHERE session_id = $session_id AND is_active = 1 LIMIT 1";
@@ -22,12 +24,27 @@ function getActiveStage($conn, $round_id) {
     return ($result && $result->num_rows > 0) ? $result->fetch_assoc() : null;
 }
 
+function getCompletedStages($conn, $participant_id, $round_id) {
+    $completed = [];
+    if (!$participant_id || !$round_id) return $completed;
+
+    $stmt = $conn->prepare("SELECT stage_name FROM participant_stage_status WHERE participant_id = ? AND round_id = ? AND completed =1");
+    $stmt->bind_param("ii", $participant_id, $round_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($row = $res->fetch_assoc()) {
+        $completed[] = $row['stage_name'];
+    }
+    return $completed;
+}
+
 // --- 2️ Gather current status ---
 
 $status = [
     'session' => null,
     'round' => null,
-    'stage' => null
+    'stage' => null,
+    'completed_stages' => [] // safe default
 ];
 
 // Get current ongoing session
@@ -36,7 +53,8 @@ if ($session) {
     $status['session'] = [
         'session_id' => $session['session_id'],
         'session_name' => $session['session_name'],
-        'status' => $session['session_status']
+        'status' => $session['session_status'],
+        'youare' => $participant_id
     ];
 
     // Get current live round (if any)
@@ -58,45 +76,19 @@ if ($session) {
                 'started_at' => $stage['started_at']
             ];
         }
+
+        // Only include participant's completed stages if logged in
+        if ($participant_id) {
+            $status['completed_stages'] = getCompletedStages($conn, $participant_id, $round['round_id']);
+        }
     }
 }
 
-// --- 3️ Return everything as JSON ---
+// --- 3️ Return JSON ---
 echo json_encode([
     'success' => true,
     'data' => $status
 ]);
 
 $conn->close();
-
-// Output Description:
-// This script generates a JSON response containing the current status of an ongoing session, including details about the active session, round, and stage (if any). 
-// The response has two main keys:
-// - 'success': A boolean indicating the request was successful (always true in this case).
-// - 'data': An object with three properties:
-//   - 'session': Contains the session_id, session_name, and status of the ongoing session, or null if no session is ongoing.
-//   - 'round': Contains the round_id, round_number, is_active status, and started_at timestamp of the active round, or null if no round is active.
-//   - 'stage': Contains the stage_id, stage_name, and started_at timestamp of the active stage, or null if no stage is active.
-//
-// Example $status object structure:
-// $status = [
-//     'session' => [
-//         'session_id' => 1,
-//         'session_name' => 'Annual Conference 2025',
-//         'status' => 'ongoing'
-//     ],
-//     'round' => [
-//         'round_id' => 5,
-//         'round_number' => 2,
-//         'is_active' => 1,
-//         'started_at' => '2025-10-13 09:00:00'
-//     ],
-//     'stage' => [
-//         'stage_id' => 3,
-//         'stage_name' => 'Q&A Session',
-//         'started_at' => '2025-10-13 09:15:00'
-//     ]
-// ];
-// If no ongoing session, round, or stage exists, the corresponding key will be null, e.g., 'session' => null.
-
 ?>

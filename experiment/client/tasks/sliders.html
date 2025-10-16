@@ -1,0 +1,40 @@
+
+  <h1>Slider Task</h1>
+<p>Move each slider so that it reads <strong>50</strong>. You have <span id="timer">60</span> s.</p>
+
+  <div id="taskContainer"></div>
+   
+
+
+<style>
+  #effort-task-screen #taskContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-top: 20px;
+  }
+  #effort-task-screen .slider-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #f8f8f8;
+    border-radius: 10px;
+    padding: 10px 0;
+    width: 90%;
+    max-width: 350px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  #effort-task-screen .value-label {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  #effort-task-screen .slider {
+    width: 80%;
+    touch-action: none;
+  }
+  #effort-task-screen #timer {
+    font-weight: bold;
+    margin-top: 10px;
+  }
+</style>

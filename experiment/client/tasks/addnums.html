@@ -1,0 +1,67 @@
+
+  
+  <h1>Add Numbers Task</h1>
+<p>Add as many numbers as you can in  <strong>60</strong> seconds. You have <span id="timer">60</span> s.</p>
+
+  <div id="taskBox">
+    <div id="problem"></div>
+    <input id="answer" type="text" readonly>
+    <div id="keypad"></div>
+    <button id="submit">Submit</button>
+  </div>
+
+
+<style>
+  /* Scoped to effort-task-screen */
+  #effort-task-screen #taskBox {
+    margin: 20px auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    width: 90%;
+    max-width: 400px;
+  }
+  #effort-task-screen #problem {
+    font-size: 2.4rem;
+    margin-bottom: 20px;
+  }
+  #effort-task-screen #answer {
+    font-size: 2rem;
+    text-align: center;
+    width: 60%;
+    padding: 8px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+  #effort-task-screen #keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 300px;
+    margin: 0 auto 15px;
+  }
+  #effort-task-screen .key {
+    font-size: 1.8rem;
+    padding: 15px 0;
+    background: #e0e0e0;
+    border: none;
+    border-radius: 8px;
+    touch-action: manipulation;
+  }
+  #effort-task-screen .key:active { background: #d0d0d0; }
+  #effort-task-screen #submit {
+    font-size: 1.4rem;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    margin-top: 10px;
+  }
+  #effort-task-screen #timer {
+    margin-top: 10px;
+    font-weight: bold;
+  }
+</style>

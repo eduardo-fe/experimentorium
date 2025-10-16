@@ -153,3 +153,18 @@ ALTER TABLE stages
 ADD COLUMN round_id INT AFTER stage_id,
 ADD CONSTRAINT fk_stages_round
   FOREIGN KEY (round_id) REFERENCES rounds(round_id);
+
+
+CREATE TABLE participant_stage_status (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    participant_id INT NOT NULL,
+    session_id INT NOT NULL,
+    round_id INT NOT NULL,
+    stage_name VARCHAR(50) NOT NULL,
+    completed BOOLEAN DEFAULT 0,
+    completed_at DATETIME DEFAULT NULL,
+    UNIQUE KEY(participant_id, round_id, stage_name),
+    FOREIGN KEY (participant_id) REFERENCES participants(participant_id),
+    FOREIGN KEY (session_id) REFERENCES sessions(session_id),
+    FOREIGN KEY (round_id) REFERENCES rounds(round_id)
+);
