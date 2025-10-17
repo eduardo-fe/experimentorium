@@ -11,6 +11,8 @@ $input = json_decode(file_get_contents('php://input'), true);
 $action = $input['action'] ?? '';
 
 include 'helpers.php'; // <- new file
+include "match_participants.php";
+include 'effort_helpers.php';  
 
 // --- Get current ongoing session (if any) ---
 $existing_session = getOngoingSession($conn);
@@ -149,92 +151,90 @@ switch ($action) {
             'round_number' => $next_round_number,
             'round_type' => $action
         ]);
-        break;
+    break;
 
     // --- DELETE ROUND (only active/incomplete rounds) ---
     case 'delete_round':
-    if (!$existing_session) {
-        echo json_encode(['success' => false, 'message' => 'No ongoing session']);
-        break;
-    }
+        if (!$existing_session) {
+            echo json_encode(['success' => false, 'message' => 'No ongoing session']);
+            break;
+        }
 
-    $session_id = $existing_session['session_id'];
-    $live_round = getLiveRound($conn, $session_id);
+        $session_id = $existing_session['session_id'];
+        $live_round = getLiveRound($conn, $session_id);
 
-    if (!$live_round) {
-        echo json_encode(['success' => false, 'message' => 'No active/incomplete round to delete']);
-        break;
-    }
+        if (!$live_round) {
+            echo json_encode(['success' => false, 'message' => 'No active/incomplete round to delete']);
+            break;
+        }
 
-    $round_id = $live_round['round_id'];
+        $round_id = $live_round['round_id'];
 
-// 1. Delete player-level decisions for this round
-if (!$conn->query("DELETE FROM decisions WHERE round_id = $round_id")) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Error deleting decisions: ' . $conn->error
-    ]);
+        // 1. Delete player-level decisions for this round
+        if (!$conn->query("DELETE FROM decisions WHERE round_id = $round_id")) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error deleting decisions: ' . $conn->error
+            ]);
+            break;
+        }
+
+        // 2. Delete participant stage decisions (if you have that table)
+        if ($conn->query("SHOW TABLES LIKE 'participant_stage_decisions'")->num_rows) {
+            if (!$conn->query("DELETE FROM participant_stage_decisions WHERE round_id = $round_id")) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Error deleting participant stage decisions: ' . $conn->error
+                ]);
+                break;
+            }
+        }
+
+        // 3. Delete participant stage status
+        if ($conn->query("SHOW TABLES LIKE 'participant_stage_status'")->num_rows) {
+            if (!$conn->query("DELETE FROM participant_stage_status WHERE round_id = $round_id")) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Error deleting participant stage status: ' . $conn->error
+                ]);
+                break;
+            }
+        }
+
+        // 4. Delete effort tasks
+        if (!$conn->query("DELETE FROM effort_tasks WHERE round_id = $round_id")) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error deleting effort tasks: ' . $conn->error
+            ]);
+            break;
+        }
+
+        // 5. Delete stages
+        if (!$conn->query("DELETE FROM stages WHERE round_id = $round_id")) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error deleting stages: ' . $conn->error
+            ]);
+            break;
+        }
+
+        // 6. Finally, delete the round itself
+        if (!$conn->query("DELETE FROM rounds WHERE round_id = $round_id")) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error deleting round: ' . $conn->error
+            ]);
+            break;
+        }
+
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Active round deleted',
+                'round_id' => $round_id
+            ]);
     break;
-}
-
-// 2. Delete participant stage decisions (if you have that table)
-if ($conn->query("SHOW TABLES LIKE 'participant_stage_decisions'")->num_rows) {
-    if (!$conn->query("DELETE FROM participant_stage_decisions WHERE round_id = $round_id")) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Error deleting participant stage decisions: ' . $conn->error
-        ]);
-        break;
-    }
-}
-
-// 3. Delete participant stage status
-if ($conn->query("SHOW TABLES LIKE 'participant_stage_status'")->num_rows) {
-    if (!$conn->query("DELETE FROM participant_stage_status WHERE round_id = $round_id")) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Error deleting participant stage status: ' . $conn->error
-        ]);
-        break;
-    }
-}
-
-// 4. Delete effort tasks
-if (!$conn->query("DELETE FROM effort_tasks WHERE round_id = $round_id")) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Error deleting effort tasks: ' . $conn->error
-    ]);
-    break;
-}
-
-// 5. Delete stages
-if (!$conn->query("DELETE FROM stages WHERE round_id = $round_id")) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Error deleting stages: ' . $conn->error
-    ]);
-    break;
-}
-
-// 6. Finally, delete the round itself
-if (!$conn->query("DELETE FROM rounds WHERE round_id = $round_id")) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Error deleting round: ' . $conn->error
-    ]);
-    break;
-}
-
-
-    echo json_encode([
-        'success' => true,
-        'message' => 'Active round deleted',
-        'round_id' => $round_id
-    ]);
-break;
-
-    
 
 
 
@@ -284,14 +284,33 @@ break;
         $next_stage = getNextStageByRound($conn, $round_id, $current_stage_order);
         if ($next_stage) {
             $next_stage_id = (int)$next_stage['stage_id'];
-            $conn->query("UPDATE stages SET is_active = 1, started_at = NOW() WHERE stage_id = $next_stage_id");
+            $next_stage_name = $next_stage['stage_name'];
 
+            $conn->query("UPDATE stages SET is_active = 1, started_at = NOW() WHERE stage_id = $next_stage_id");
+            
+            // Matching players 
+            $trigger_message = null;
+
+            if ($next_stage_name === 'outcome_realization') {
+                // Rank A players before matching
+                $rank_message = rankEffortTaskResults($conn, $session_id, $round_id);
+
+                // Trigger random matching
+                
+                $trigger_message = match_participants($conn, $session_id, $round_id);
+
+            }
+
+                    
             echo json_encode([
-                'success' => true,
-                'message' => 'Moved to next stage',
-                'next_stage' => $next_stage['stage_name'],
-                'round_id' => $round_id
-            ]);
+                    'success' => true,
+                    'message' => 'Moved to next stage: ' . $next_stage_name . 
+                                ($trigger_message ? ' — ' . $trigger_message : ''),
+                    'current_stage' => $current_stage_name,
+                    'next_stage' => $next_stage_name,
+                    'round_id' => $round_id
+                ]);
+
         } else {
             // This should not normally happen if stages were created consistently,
             // but as a fallback mark round closed:
@@ -309,7 +328,7 @@ break;
             'success' => false,
             'message' => 'Invalid action'
         ]);
-        break;
+    break;
 }
 
 // --- Close DB connection ---
